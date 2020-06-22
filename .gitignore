@@ -1,0 +1,11 @@
+# Vagrant stuff
+*.log
+/.vagrant
+
+# Ansible
+*.retry
+
+# Others
+demo-ops/.gitignore
+demo-ops/README.md
+demo-ops/demo.bin

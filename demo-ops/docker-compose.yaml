@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DEMO_APP_ADDR=0.0.0.0:8000
+      - DEMO_REDIS_ADDR=redis:6379
+    depends_on:
+      - "redis"
+    command: ["/go/src/app/wait-for-it/wait-for-it.sh", "redis:6379", "--", "/go/src/app/demo.bin"]
+  redis:
+    restart: always
+    image: "redis:alpine"
+    volumes:
+      - /data:/var/lib/redis
