@@ -26,10 +26,16 @@ main() {
 	fi
 	success "All dependencies met"
 	info "Starting box with vagrant"
-	ensure vagrant up
+	# ensure vagrant up
 	info "Application has been deployed"
-	info "Access boc using $ vagrant ssh"
-	info "Access app on http://localhost:8000"
+	success "Access box using $ vagrant ssh"
+	success "Access app on http://localhost:8000"
+	info "Deploying k8s cluster with app (waiting for 10 secs ...)"
+	sleep 10
+	info "Starting kubernetes deployment"
+	ensure cd kubernetes && vagrant up
+	info "Application deployed with one node k8s cluster"
+	success "Access the kubernetes application on http://192.168.50.4:3200"
 }
 
 ensure() {
