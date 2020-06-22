@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: demo-ops
+  name: demo-ops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-ops
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: demo-ops
+    spec:
+      containers:
+      - image: demo-ops:v1.0
+        name: demo-ops
+        ports:
+        - containerPort: 8000
+        resources: {}
+        env:
+        - name: DEMO_APP_ADDR
+          value: "0.0.0.0:8000"
+        - name: DEMO_REDIS_ADDR
+          value: "localhost:6379"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        command: ["/go/src/app/wait-for-it/wait-for-it.sh", "localhost:6379", "--", "/go/src/app/demo.bin"]
+
+      - image: redis:alpine
+        name: redis
+        volumeMounts:
+        - name: redispv
+          mountPath: /var/lib/redis
+      volumes:
+      - name: redispv
+        hostPath:
+          path: /data
+status: {}

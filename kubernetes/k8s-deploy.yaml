@@ -1,0 +1,57 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  tasks:
+    - name: Check if Kubeadm is configured
+      command: "kubectl get pods"
+      register: result
+      failed_when:
+        - result.rc != 0
+      ignore_errors: True
+
+    - name: Configure and start kubernetes cluster
+      block:
+        - sysctl:
+            name: net.ipv4.ip_forward
+            value: 1
+            sysctl_set: yes
+            state: present
+            reload: yes
+        - name: "Kubeadmin PreRequisites"
+          shell: "modprobe br_netfilter && echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables && echo 1 > /proc/sys/net/ipv4/ip_forward"
+
+        - name: "Deploy Kubeadmin"
+          shell: "kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU,Hostname"
+
+        - name: "Kubectl Setup"
+          shell: "mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config"
+
+        - name: Put cluster in single node mode
+          shell: "kubectl taint nodes --all node-role.kubernetes.io/master-"
+
+        - name: "Install Flannel"
+          shell: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+      when: result.rc != 0
+
+    - name: Building docker image
+      shell: "docker build /etc/demo-ops/ -t demo-ops:v1.0"
+
+    - name: Deploy application
+      block:
+        - name: Creating namespace demo-ops
+          shell: "kubectl create -f /etc/app_yamls/demo-ops-namespace.yaml"
+        
+        - name: Creating deployment demo-ops
+          shell: "kubectl create -n demo-ops -f /etc/app_yamls/demo-ops-deployment.yaml"
+
+        - name: Creating service for exposing deployment
+          shell: "kubectl create -n demo-ops -f /etc/app_yamls/demo-ops-service.yaml"
+
+        - name: Creating quotas for deployment
+          shell: "kubectl create -n demo-ops -f /etc/app_yamls/demo-ops-quota.yaml"
+
+
+
+
+    
